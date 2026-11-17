@@ -3,6 +3,8 @@ model_config: saved/YOPO_116/ablation_config.json
 checkpoint_sha_file: checkpoint.sha256
 encoder_engine: proposed116_encoder.engine
 planner_engine: proposed116_planner.engine
+# Only read by the optional PyTorch simulation entry (run_pt.sh).
+weight: saved/YOPO_116/epoch160.pth
 
 # Test with current simulation topics, then replace with hardware topics.
 rgb_topic: /rgb/image

@@ -16,6 +16,19 @@ NX 获取仓库（须先安装 Git LFS）：
   bash run.sh --check_only
   bash run.sh
 
+PyTorch 仿真测试（不需要 TensorRT engine）：
+  source /opt/ros/noetic/setup.bash
+  bash run_pt.sh --check_only
+  bash run_pt.sh
+
+run_pt.sh 使用相同 deployment.yaml、116/epoch160.pth 和双帧特征缓存。
+也可 bash run.sh --backend torch。默认 bash run.sh 仍为 TensorRT。
+PyTorch 路径不读取或构建 engine，不需要安装 TensorRT Python 包。
+需要兼容的 torch、depth-capable ultralytics==8.4.174 及已有 ROS/Python 依赖。
+有 CUDA 时使用 GPU，无 CUDA 时可用 CPU 检查，但实时规划频率需另测。
+仿真图像、里程计和控制器照常运行，关闭原 YOPO 节点以免重复发布命令。
+默认等待目标消息；用 RViz 的 2D Nav Goal 设置目标后开始规划。
+
 先沿用 deployment.yaml 中的仿真话题验证，再修改为实物话题。
 TRT 程序输出 PositionCommand，正常轨迹由独立的 NetworkControl 将加速度和 yaw
 转换为姿态及推力；NetworkControl/飞控程序不包含在本仓库中。
