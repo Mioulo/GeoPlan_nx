@@ -1,0 +1,261 @@
+{
+  "velocity": 6.0,
+  "vel_max_train": 6.0,
+  "acc_max_train": 6.0,
+  "wg": 0.15,
+  "ws": 10.0,
+  "wa": 0.0,
+  "wc": 1.5,
+  "score_mode": "topk-collision",
+  "selection_candidate_topk": 8,
+  "wfeature": 1,
+  "wr2d": 1,
+  "wreprojection": 0.002,
+  "reprojection_mask_absolute": true,
+  "reprojection_fx": 240.0,
+  "reprojection_fy": 240.0,
+  "reprojection_cx": 240.0,
+  "reprojection_cy": 135.0,
+  "reprojection_camera_width": 480,
+  "reprojection_camera_height": 270,
+  "wclearance": 0.2,
+  "wrelative_r2d": 1,
+  "wabs_r2d": 1,
+  "wgradient_r2d": 0.5,
+  "wsmooth_r2d": 0.1,
+  "wedge_r2d": 4.0,
+  "r2d_edge_threshold": 0.015,
+  "r2d_depth_max_m": 20.0,
+  "r2d_near_depth_m": 8.0,
+  "r2d_mid_depth_m": 15.0,
+  "r2d_far_depth_m": 19.5,
+  "r2d_censor_threshold_m": 19.5,
+  "r2d_near_weight": 1.5,
+  "r2d_mid_weight": 1.0,
+  "r2d_far_weight": 0.6,
+  "clearance_near_weight": 2.0,
+  "r2d_dpt_features": 32,
+  "wrelative_feature": 1,
+  "wabs_feature": 1,
+  "feature_cosine_eps": 0.0001,
+  "r2d_relative_min_mean": 0.001,
+  "training_max_grad_norm": 0.0,
+  "training_attention_backend": "math",
+  "training_gradient_diagnostic_threshold": 1000.0,
+  "training_save_gradient_diagnostics": true,
+  "dataset_path": "/data/data_fwc/dataset",
+  "dataset_stage_dirs": {
+    "depth_single": "stage1",
+    "paired_depth_rgb": "stage2",
+    "rgb_sequence": "stage3"
+  },
+  "dataset_valid_folders": {
+    "depth_single": [
+      12,
+      21
+    ],
+    "paired_depth_rgb": [
+      0,
+      2,
+      4
+    ],
+    "rgb_sequence": [
+      0,
+      2,
+      4
+    ]
+  },
+  "dataset_exclude_folders": {
+    "depth_single": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10
+    ],
+    "paired_depth_rgb": [],
+    "rgb_sequence": []
+  },
+  "image_height": 270,
+  "image_width": 480,
+  "rgb_encoder": "yolo26_depth",
+  "rgb_visual_fusion": false,
+  "rgb_feature_channels": 256,
+  "rgb_feature_stride": 16,
+  "rgb_frame_layers": 2,
+  "rgb_fusion_layers": 3,
+  "yolo_depth_weights": "/home/fwc/YOPO-RGB/YOPO/yolo26m-depth.pt",
+  "yolo_depth_architecture": "yolo26m-depth.yaml",
+  "yolo_depth_input_height": 288,
+  "yolo_depth_input_width": 512,
+  "yolo_depth_freeze_backbone": true,
+  "yolo_depth_freeze_neck": true,
+  "yolo_depth_freeze_head": true,
+  "yolo_depth_feature_channels": 64,
+  "yolo_depth_adapter_enabled": true,
+  "yolo_depth_adapter_bottleneck": 32,
+  "yolo_depth_adapter_scale": 0.1,
+  "yolo_depth_adapter_layers": [
+    4,
+    6,
+    8,
+    10,
+    13,
+    16,
+    19,
+    22
+  ],
+  "xy_target_distance": 15.0,
+  "planning_local_window": 5,
+  "planning_global_height": 2,
+  "planning_global_width": 3,
+  "rgb_augmentation": {
+    "enabled": true,
+    "brightness": {
+      "p": 0.7,
+      "gain": [
+        0.65,
+        1.4
+      ],
+      "bias": [
+        -0.12,
+        0.12
+      ]
+    },
+    "contrast": {
+      "p": 0.6,
+      "gain": [
+        0.65,
+        1.45
+      ]
+    },
+    "color": {
+      "p": 0.6,
+      "channel_gain": [
+        0.78,
+        1.25
+      ],
+      "channel_bias": [
+        -0.07,
+        0.07
+      ]
+    },
+    "gamma": {
+      "p": 0.5,
+      "value": [
+        0.65,
+        1.55
+      ]
+    },
+    "vignette": {
+      "p": 0.35,
+      "strength": [
+        0.08,
+        0.3
+      ]
+    },
+    "gaussian_noise": {
+      "p": 0.5,
+      "sigma": [
+        0.004,
+        0.04
+      ]
+    },
+    "blur": {
+      "p": 0.18,
+      "kernel_sizes": [
+        3,
+        5
+      ]
+    },
+    "jpeg": {
+      "p": 0.22,
+      "quality": [
+        45,
+        92
+      ]
+    }
+  },
+  "depth_pose_scale_aug": {
+    "enabled": false,
+    "num_variants": 5,
+    "low_range": [
+      0.2,
+      0.9
+    ],
+    "high_range": [
+      1.1,
+      2.0
+    ]
+  },
+  "data_timesteps": 2,
+  "depth_feature_contrastive": false,
+  "depth_contrastive_weight": 0.1,
+  "single_frame_no_pose": false,
+  "temporal_no_pose": false,
+  "disable_auxiliary_depth": false,
+  "single_rgb_feature_distill": false,
+  "pure_rgb_train_num": 80,
+  "depth_pretrain_num": 100,
+  "rgb_distill_num": 140,
+  "rgb_finetune_num": 160,
+  "depth_expert_path": "/home/fwc/YOPO-RGB/YOPO/saved/YOPO_105/epoch100_depth_expert.pth",
+  "horizon_num": 5,
+  "vertical_num": 3,
+  "horizon_camera_fov": 90.0,
+  "vertical_camera_fov": 60.0,
+  "horizon_anchor_fov": 20.0,
+  "vertical_anchor_fov": 20.0,
+  "radio_range": 5.0,
+  "radio_num": 1,
+  "d0": 1.2,
+  "r": 0.6,
+  "vx_mean_unit": 0.4,
+  "vy_mean_unit": 0.0,
+  "vz_mean_unit": 0.0,
+  "vx_std_unit": 2.0,
+  "vy_std_unit": 0.45,
+  "vz_std_unit": 0.3,
+  "ax_mean_unit": 0.0,
+  "ay_mean_unit": 0.0,
+  "az_mean_unit": 0.0,
+  "ax_std_unit": 0.5,
+  "ay_std_unit": 0.5,
+  "az_std_unit": 0.3,
+  "goal_pitch_std": 15.0,
+  "goal_yaw_std": 40.0,
+  "map_expand_min": [
+    0,
+    0,
+    0.2
+  ],
+  "map_expand_max": [
+    0,
+    0,
+    6.0
+  ],
+  "use_cost_to_go": false,
+  "wg_cost_to_go": 0.15,
+  "goal_field_res": 0.5,
+  "goal_field_half_xy": 18.0,
+  "goal_field_virtual_far": 15.0,
+  "goal_field_clearance_dist": 2.0,
+  "goal_field_speed_min": 0.1,
+  "goal_field_height_range": [
+    0.5,
+    1.8
+  ],
+  "goal_field_max_retries": 12,
+  "train": true,
+  "goal_length": 10.0,
+  "sgm_time": 1.6666666666666667,
+  "traj_num": 15,
+  "cnn_early_fusion": false,
+  "single_rgb_contrastive": false
+}

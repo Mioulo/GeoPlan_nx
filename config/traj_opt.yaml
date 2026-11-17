@@ -1,0 +1,239 @@
+# IMPORTANT: velocity in testing (modifiable)
+velocity: 6.0
+#！！！！！特别注意，由于需要在线求解，速度放缩后需要调整平滑代价的权重n^5关系
+
+# IMPORTANT: vel_max and acc_max in training
+# not the actual values in testing, ensure consistency between testing and training, please refer to ../policy/primitive.py
+vel_max_train: 6.0
+acc_max_train: 6.0
+
+# IMPORTANT: weight of costs for unit speed (can be visualized in tensorboard)
+wg: 0.15   # legacy analytic goal weight (used when use_cost_to_go=false)
+ws: 10.0   # smoothness   (smaller jerk)
+wa: 0.0    # acceleration (smaller acceleration)
+wc: 1.0    # collision    (distance to obstacle)
+score_mode: topk-collision  # selection logits -> top-k -> learned collision + analytic costs
+selection_candidate_topk: 8  # rerank the eight highest-logit candidates
+
+wfeature: 1  # only used when feature distillation is enabled
+wr2d: 1  # single-frame RGB baseline does not use auxiliary depth reconstruction
+wreprojection: 0.002  # calibrated against saved batches and training logs; monitor during retraining
+reprojection_mask_absolute: true  # supervise absolute depth only where both GT frames see the point
+# Simulator pinhole intrinsics at 480x270; camera frame uses body FLU axes.
+reprojection_fx: 240.0
+reprojection_fy: 240.0
+reprojection_cx: 240.0
+reprojection_cy: 135.0
+reprojection_camera_width: 480
+reprojection_camera_height: 270
+wclearance: 0.2  # lightweight P32 nearest-depth auxiliary regression
+
+#感知部分细节权重
+wrelative_r2d : 1
+wabs_r2d : 1
+# 深度重建细节：边缘梯度用于保留树枝等细障碍，非边缘二阶项用于抑制墙面波纹。
+wgradient_r2d : 0.5
+wsmooth_r2d : 0.1
+wedge_r2d : 4.0
+r2d_edge_threshold : 0.015  # 归一化深度，0.015 对应约 0.3 m（最大深度 20 m）
+# 辅助深度恢复按真值距离生成逐像素权重：近处优先，远处仍保留监督。
+r2d_depth_max_m : 20.0
+r2d_near_depth_m : 8.0
+r2d_mid_depth_m : 15.0
+r2d_far_depth_m : 19.5
+r2d_censor_threshold_m : 19.5  # values at/above this range are lower bounds, not exact 20 m targets
+r2d_near_weight : 1.5
+r2d_mid_weight : 1.0
+r2d_far_weight : 0.6
+clearance_near_weight : 2.0
+# Width of the two-scale final-fused/P32 DPT-lite decoder. Excluded from normal
+# planning inference and only runs for auxiliary training/depth visualization.
+r2d_dpt_features : 32
+wrelative_feature : 1
+wabs_feature : 1
+# Stabilize near-zero feature/depth normalization; keep normal-scale loss unchanged.
+feature_cosine_eps: 1.0e-4
+r2d_relative_min_mean: 1.0e-3  # normalized depth; 0.02 m when max depth is 20 m
+training_max_grad_norm: 0.0  # disabled by default; positive values enable clipping after unscale
+# Use math SDPA in training to bypass suspect fused backward kernels on Blackwell.
+# auto is kept for diagnostic comparisons; model/inference structure is unchanged.
+training_attention_backend: math
+# Save one actual batch/model replay bundle on a huge gradient, plus one on failure.
+# Only abnormal batches incur this disk I/O (roughly 400 MB per batch=32 bundle).
+training_gradient_diagnostic_threshold: 1000.0
+training_save_gradient_diagnostics: true
+
+# Pin-hole RGB input. Depth features use a 256x17x30 grid (effective stride 16).
+# The planning bridge preserves the depth expert's 128x9x15 detail grid.
+dataset_path: "/data/data_fwc/dataset"
+dataset_stage_dirs:
+  depth_single: "stage1"
+  paired_depth_rgb: "stage2"
+  rgb_sequence: "stage3"
+dataset_valid_folders:
+  depth_single: [12,21]
+  paired_depth_rgb: [0,2,4]
+  rgb_sequence: [0,2,4]
+# Excluded map IDs are removed before train/validation splitting and image/state loading.
+# Exclusions take priority over validation IDs; only Stage I excludes maps 0..10.
+dataset_exclude_folders:
+  depth_single: [0,1,2,3,4,5,6,7,8,9,10]
+  paired_depth_rgb: []
+  rgb_sequence: []
+image_height: 270
+image_width: 480
+# Complete pretrained YOLODepth -> native depth -> small convs -> pose/time fusion.
+# Set rgb_encoder: resnet to construct the previous RGB architecture.
+rgb_encoder: yolo26_depth
+# Preserve current-frame RGB appearance alongside the temporal depth features.
+rgb_visual_fusion: true
+# RGB visual width/grid/layers; the shared expert and planner remain 128-wide.
+rgb_feature_channels: 256
+rgb_feature_stride: 16  # effective depth-feature token stride; supports 8 or 16
+rgb_frame_layers: 2
+rgb_fusion_layers: 3
+yolo_depth_weights: "yolo26m-depth.pt"
+yolo_depth_architecture: "yolo26m-depth.yaml"
+yolo_depth_input_height: 288
+yolo_depth_input_width: 512
+# Freeze pretrained backbone/neck/depth-head weights and BatchNorm statistics.
+# Gradients still traverse these modules to train the existing adapters.
+yolo_depth_freeze_backbone: true
+yolo_depth_freeze_neck: true
+yolo_depth_freeze_head: true
+# Native depth 1x72x128 -> stem 32x72x128 -> BasicBlock 64x36x64.
+# Stride 16 adds BasicBlock 128x18x32, then Conv1x1 -> 256x18x32;
+# only the small final 18x32 -> 17x30 resize remains. Stride 8 keeps one block.
+# First residual width; stem uses half, the second stage uses twice this value.
+yolo_depth_feature_channels: 64
+# The calibrated YOLO depth output enters the feature extractor directly.
+# Residual adapters after high-level backbone and neck feature blocks.
+# C -> 32 -> depthwise 3x3 -> C; zero-initialized output preserves pretrained features.
+yolo_depth_adapter_enabled: true
+yolo_depth_adapter_bottleneck: 32
+# Fixed residual scale for new adapters: x + scale * delta. Saved with weights.
+yolo_depth_adapter_scale: 0.1
+yolo_depth_adapter_layers: [4, 6, 8, 10, 13, 16, 19, 22]
+# Stage II retains perception-only distillation; teacher and planning modules freeze.
+# fixed XY target distance used by ORIN/YOLO tracker (meters)
+xy_target_distance: 15.0
+# 1920x1080 针孔 RGB 等比缩小 4 倍：K=(240,240,240,135)，
+# 水平 FOV 约 90 度，竖直 FOV 约 58.7 度。
+
+# Dense 9x15 visual detail is retained for distillation.  Each 3x5 trajectory
+# query attends to one aligned 5x5 local window; 2x3 pooled tokens add global context.
+planning_local_window: 5
+planning_global_height: 2
+planning_global_width: 3
+
+# RGB photometric augmentation, only used for train split.
+# Keep these mild at first; raise ranges/probabilities after loss is stable.
+rgb_augmentation:
+  enabled: true
+  brightness:
+    p: 0.70
+    gain: [0.65, 1.40]
+    bias: [-0.12, 0.12]
+  contrast:
+    p: 0.60
+    gain: [0.65, 1.45]
+  color:
+    p: 0.60
+    channel_gain: [0.78, 1.25]
+    channel_bias: [-0.07, 0.07]
+  gamma:
+    p: 0.50
+    value: [0.65, 1.55]
+  vignette:
+    p: 0.35
+    strength: [0.08, 0.30]
+  gaussian_noise:
+    p: 0.50
+    sigma: [0.004, 0.040]
+  blur:
+    p: 0.18
+    kernel_sizes: [3, 5]
+  jpeg:
+    p: 0.22
+    quality: [45, 92]
+
+# Depth-pose scale augmentation (stage2 / paired_depth_rgb, train split only).
+# 利用单目尺度模糊：相对位姿平移和(归一化)深度乘同一尺度 s。深度归一化下 1.0==20m
+# (见 DataProcess/collect_simulator_data.py，系数 65535/20)，故 scaled depth clip 到 1.0 即 20m 截断。
+# 一个样本 -> num_variants 个版本：variant 0 保持 1.0x 原图；其余随机(一半 low_range，一半 high_range)。
+depth_pose_scale_aug:
+  enabled: false
+  num_variants: 5
+  low_range: [0.2, 0.9]    # 缩小场景/平移（深度变小，无截断）
+  high_range: [1.1, 2.0]   # 放大场景/平移（深度变大，>1.0 处按 20m 截断）
+
+#训练步长设置和三阶段的分界点
+data_timesteps: 2
+# Optional Stage-II single-frame predicted-depth / label-depth InfoNCE.
+depth_feature_contrastive: false
+depth_contrastive_weight: 0.1
+# 单帧 RGB 结构消融：网络仅使用当前帧，并移除位姿嵌入、帧内注意力、时序融合和辅助深度分支。
+# data_timesteps 仍为 2，仅用于让数据集与 full model 保持相同的当前帧采样范围。
+single_frame_no_pose: false
+# Two-frame ablation switches; CLI --ablation configures these for training.
+temporal_no_pose: false
+disable_auxiliary_depth: false
+# false: 纯单帧 RGB，跳过深度预训练和特征蒸馏，用规划损失端到端训练。
+# true:  单帧 RGB + feature supervision，启用训练期深度分支和三阶段训练。
+single_rgb_feature_distill: false
+# 纯单帧 RGB 端到端训练总轮数；对齐加载深度专家后 Stage II + III 的 80 个 epoch。
+pure_rgb_train_num: 80
+depth_pretrain_num : 100
+rgb_distill_num : 140
+rgb_finetune_num : 140
+
+# 训练好的深度专家权重路径；非空则只载入深度专家权重并跳过 stage1 直接进 stage2/3。
+# 命令行 --depth_expert 可覆盖此值；留空字符串则禁用(从 stage1 正常训练)。
+# 接受 *_depth_expert.pth 快照或完整 checkpoint(自动按深度专家前缀过滤)。
+depth_expert_path: ""  # retrain the depth expert with collision-cost regression
+#depth_expert_path: ""
+
+# trajectory and primitive param (Note: traj_time = 2 * radio / vel_max) (can be visualized in rviz)
+horizon_num: 5
+vertical_num: 3
+horizon_camera_fov: 90.0
+vertical_camera_fov: 60.0
+horizon_anchor_fov: 20.0
+vertical_anchor_fov: 20.0
+radio_range: 5.0    # planning horizon: 2 * radio_range
+radio_num: 1        # only support 1 currently
+
+# safety penalties
+d0: 1.2
+r: 0.6
+
+# distribution for unit state sampling (can be visualized by 'python ./policy/yopo_dataset.py')
+vx_mean_unit: 0.4
+vy_mean_unit: 0.0
+vz_mean_unit: 0.0
+vx_std_unit: 2.0
+vy_std_unit: 0.45
+vz_std_unit: 0.3
+ax_mean_unit: 0.0
+ay_mean_unit: 0.0
+az_mean_unit: 0.0
+ax_std_unit: 0.5
+ay_std_unit: 0.5
+az_std_unit: 0.3
+goal_pitch_std: 15.0  # clip goal_length to: 2 * radio_range; 10% probability [0, 2 * radio_range]
+goal_yaw_std: 40.0
+
+# extend the map to avoid trajectory exceeding bounds (especially in z-axis) and treating the sky outside the map as obstacle
+map_expand_min: [0, 0, 0.2]
+map_expand_max: [0, 0, 6.0]
+
+# 2D XY cost-to-go replaces the analytic goal term; no vertical guidance or 3D FMM.
+use_cost_to_go: false  # default analytic goal guidance; no 2D field is built
+wg_cost_to_go: 0.15  # retained weight; prior 3D calibration does not calibrate this 2D field
+goal_field_res: 0.5
+goal_field_half_xy: 18.0  # contains 10 m endpoints around the 15 m virtual goal
+goal_field_virtual_far: 15.0
+goal_field_clearance_dist: 2.0
+goal_field_speed_min: 0.1
+goal_field_height_range: [0.5, 1.8]  # world-Z obstacle projection band (meters); field is XY only
+goal_field_max_retries: 12

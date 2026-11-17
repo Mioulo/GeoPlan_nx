@@ -1,0 +1,31 @@
+{
+  "schema": "yopo.temporal-engine.v1",
+  "role": "encoder",
+  "score_mode": "topk-collision",
+  "candidate_topk": 8,
+  "weight_sha256": "bbe19ae2f357bac98aa5ec7346ae51ce0c67918dd4f077f14654e797f1846f94",
+  "runtime_config": {
+    "image_height": 270,
+    "image_width": 480,
+    "data_timesteps": 2,
+    "vertical_num": 3,
+    "horizon_num": 5,
+    "velocity": 6.0,
+    "vel_max_train": 6.0,
+    "acc_max_train": 6.0,
+    "sgm_time": 1.6666666666666667,
+    "radio_range": 5.0,
+    "horizon_camera_fov": 90.0,
+    "vertical_camera_fov": 60.0,
+    "horizon_anchor_fov": 20.0,
+    "vertical_anchor_fov": 20.0
+  },
+  "input_names": [
+    "rgb"
+  ],
+  "output_names": [
+    "features"
+  ],
+  "deployment_id": "0d0e7ef949a2a43b40abe49a9a91ed50381560a305cb2d6911b9164b2bcce1ce",
+  "onnx_sha256": "11b423de4bb397214349fd6ddbb68e04dd30dbbb21b0a34ba6452d0c2bccdf79"
+}

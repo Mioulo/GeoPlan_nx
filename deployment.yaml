@@ -1,0 +1,22 @@
+# Paths are relative to this YAML in the portable bundle.
+model_config: saved/YOPO_116/ablation_config.json
+checkpoint_sha_file: checkpoint.sha256
+encoder_engine: proposed116_encoder.engine
+planner_engine: proposed116_planner.engine
+
+# Test with current simulation topics, then replace with hardware topics.
+rgb_topic: /rgb/image
+odom_topic: /sim/odom
+goal_topic: /move_base_simple/goal
+ctrl_topic: /so3_control/pos_cmd
+
+# Null: wait for a goal message in the odometry world frame.
+initial_goal: null
+# Null: use goal message Z.
+goal_height: null
+pitch_angle_deg: 0.0
+plan_from_reference: false
+auto_arrival_hold: true
+arrival_tolerance: 1.0
+verbose: false
+# Velocity comes from model_config (6m/s). Changing it requires re-export/build.
