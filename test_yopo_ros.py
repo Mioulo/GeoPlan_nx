@@ -904,19 +904,19 @@ class YopoNet:
 
 def parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--use_tensorrt", type=int, default=1, help="use tensorrt or not")
+    parser.add_argument("--use_tensorrt", type=int, default=0, help="use tensorrt or not")
     parser.add_argument("--use_feature_cache", type=int, default=1, choices=[0, 1], help="reuse encoded history frames; TensorRT requires split engines")
     parser.add_argument("--encoder_engine", type=str, default="yopo_encoder.engine", help="cached single-frame RGB encoder engine")
     parser.add_argument("--planner_engine", type=str, default="yopo_planner.engine", help="cached feature-input temporal planner engine")
-    parser.add_argument("--trial", type=int, default=112, help="trial number")
+    parser.add_argument("--trial", type=int, default=116, help="trial number")
     parser.add_argument("--epoch", type=int, default=160, help="epoch number")
     parser.add_argument("--weight", type=str, default="", help="explicit checkpoint path")
     parser.add_argument("--training_config", type=str, default="", help="explicit saved ablation_config.json for checkpoint settings")
     parser.add_argument("--velocity", type=float, default=None, help="override inference speed in m/s after loading training configuration")
     parser.add_argument("--arrival_tolerance", type=float, default=5.0, help="distance to goal in meters for optional arrival hold")
-    parser.add_argument("--goal_height", type=float, default=2.0, help="explicit goal height in world meters (legacy default: 2m)")
+    parser.add_argument("--goal_height", type=float, default=1.5, help="explicit goal height in world meters (legacy default: 2m)")
     parser.add_argument("--check_only", action="store_true", help="validate checkpoint metadata and print launch settings without starting ROS or flight")
-    parser.add_argument("--publish_r2d_depth", type=int, default=1, choices=[0, 1], help="publish RGB-to-depth reconstruction during inference")
+    parser.add_argument("--publish_r2d_depth", type=int, default=0, choices=[0, 1], help="publish RGB-to-depth reconstruction during inference")
     parser.add_argument("--r2d_depth_topic", type=str, default="/yopo_net/r2d_depth", help="R2D reconstructed depth image topic")
     parser.add_argument("--publish_feature_visualization", type=int, default=0, choices=[0, 1], help="publish depth/RGB planning feature visualization")
     parser.add_argument("--feature_visual_topic", type=str, default="/yopo_net/planning_feature_visual", help="planning feature visualization topic")
@@ -946,10 +946,19 @@ if __name__ == "__main__":
         weight = base_dir + "/saved/YOPO_{}/epoch{}_all.pth".format(args.trial, args.epoch)
     else:
         weight = base_dir + "/saved/YOPO_{}/epoch{}.pth".format(args.trial, args.epoch)
-    if args.training_config:
-        with open(args.training_config) as stream:
+    training_config = args.training_config
+    if not training_config:
+        # Checkpoints must use their saved architecture and cost settings.
+        # Split TensorRT engines normally live outside the checkpoint folder.
+        config_dir = (os.path.join(base_dir, "saved", "YOPO_{}".format(args.trial))
+                      if args.use_tensorrt else os.path.dirname(os.path.abspath(weight)))
+        candidate = os.path.join(config_dir, "ablation_config.json")
+        if os.path.isfile(candidate):
+            training_config = candidate
+    if training_config:
+        with open(training_config) as stream:
             cfg._data.update(json.load(stream))
-        print("load training configuration from:", args.training_config)
+        print("load training configuration from:", training_config)
     if args.velocity is not None:
         if not np.isfinite(args.velocity) or args.velocity <= 0:
             raise ValueError("velocity must be finite and positive")
